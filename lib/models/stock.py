@@ -1,6 +1,6 @@
 import sqlite3
 import random
-from persona import Persona
+from models.persona import Persona
 
 class Stock:
     def __init__(self, db_name='game.db', player_id=None):
@@ -101,3 +101,17 @@ class Stock:
         player_level = cursor.fetchone()[0]
         conn.close()
         return player_level
+
+    def list_stock(self):
+        """List all personas in the player's stock."""
+        conn = self._connect()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT name, level, arcana FROM personas WHERE player_id = ?", (self.player_id,))
+            stock_data = cursor.fetchall()
+            conn.close()
+            return stock_data
+        except sqlite3.Error as e:
+            print(f"An error occurred: {e}")
+            conn.close()
+            return []
