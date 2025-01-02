@@ -238,10 +238,9 @@ class Player:
             new_persona_id, new_persona_name, new_persona_level, new_persona_arcana = new_persona
 
             new_persona_object = Persona(new_persona_id, new_persona_name, new_persona_level, new_persona_arcana)
-
             # Add the new persona to the player's in-memory stock
             self.in_memory_stock.append(new_persona_object) 
-
+            print(self.in_memory_stock)
 
             # Remove the fused personas from the stock
             self.remove_persona_from_stock(persona_1)
@@ -277,7 +276,17 @@ class Player:
             """, (arcana_id_1, arcana_id_2,self.level - 3, self.level + 3))
 
             new_persona = cursor.fetchone()
-
+            new_persona_obj = Persona(*new_persona)
+            new_persona_obj.player_id = self.player_id
+            
+            cursor.execute("""
+            UPDATE personas 
+            SET player_id =? 
+            WHERE id =?
+            """, (new_persona_obj.player_id, new_persona_obj.id)             
+                           )
+            conn.commit()
+            
             return new_persona  # Returns a tuple: (id, name, level, arcana_id)
         
         except sqlite3.Error as e:
