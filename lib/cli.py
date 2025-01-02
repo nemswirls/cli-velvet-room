@@ -6,7 +6,28 @@ sys.path.insert(0, 'lib')
 
 def main():
     print("Welcome to The Velvet Room!")
-    print("---------------------------")
+    print("""
+                   -..:--=::-+                 
+           -:.-:-------+*+**#@            
+         -...-@@%++=-==+#*##**%           
+      @@=..:=%##*+*+:=##*+*%@%#%          
+      %%-::*+.--%=-*#%##++*#@#****##%     
+       =+--=+:-=+-=+++#*+=*#@@@%**#****#% 
+       -..--==+=+**++*+.*=*%@@@@@%***%@@@@
+     =:.:--+*+++=+++#*-+*#%@@@@@%%%%@@@@@@
+    :.::-+#*+==+++##*#*@%%@@@@@@@@@@@@@@@@
+  =..:-=*#%+-=+*##***+*@-:--#@@@@@@@@@@@@@
+ -.:--= @@@@@@@@-@===+@%..:+#@@@@@@@@@@@@@
+-::-=    @@@@@@#*@*.-@@:::+##*@@@@@@@@@@@@
+::-+       @@@@+###:*@@+==*#%*+@@@@@@@@@@@
+==         @@@@@%*@*%@@@-+#%@@@#@@@@@@@   
+            @@@@%=@*%@@@%@@@@@@@@@@@@     
+             @@%%+@%@@@@@@@@@@@@@@@@      
+             @@@%+%@@@@@@@@@@@@@@@        
+             @@@@*+@@@@@@@@@@@@           
+              @@@##@@@@@@@@@@             
+                @@@@@@@@@                                     
+""")
     
     # Load or create player
     player = initialize_player()
@@ -16,8 +37,8 @@ def main():
         display_player_level(player)
 
         print("\nMain Menu:")
-        print("1. View Player Stats")
-        print("2. View Stock")
+        print("1. View Stock")
+        print("2. View all arcanas")
         print("3. Summon a Persona")
         print("4. Release a Persona")
         print("5. Fuse Personas")
@@ -26,9 +47,9 @@ def main():
         choice = input("Choose an option (1-6): ")
         
         if choice == "1":
-            view_player_stats(player)
+             view_stock(player)
         elif choice == "2":
-            view_stock(player)
+            view_all_arcanas()
         elif choice == "3":
             summon_persona(player)
         elif choice == "4":
@@ -51,30 +72,25 @@ def initialize_player():
     player_name = input("Enter your player name: ")
 
     # Check if player already exists
-    conn = sqlite3.connect("game.db")
+    conn = sqlite3.connect("velvetRoom.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT id FROM players WHERE name = ?", (player_name,))
+    cursor.execute("SELECT id, stock_limit FROM players WHERE name = ?", (player_name,))
     player_data = cursor.fetchone()
 
     if player_data:
-        player_id = player_data[0]
-        player = Player(player_id=player_id)  # Fetch existing player data from the database
+        # Player exists, use existing player data
+        player_id, stock_limit = player_data
+        player = Player(player_id=player_id, stock_limit=stock_limit,)
     else:
+        # Player doesn't exist, create a new one
         cursor.execute("INSERT INTO players (name, level, stock_limit) VALUES (?, ?, ?)", 
                        (player_name, 1, 8))  # Default level 1 and stock limit 8
         player_id = cursor.lastrowid
-        player = Player(player_id=player_id, name=player_name)  # New player
+        player = Player(player_id=player_id, name=player_name, stock_limit=8)  # New player with default stock_limit
         conn.commit()
 
     conn.close()
     return player
-
-def view_player_stats(player):
-    """Display the player's stats."""
-    # Assuming 'player' is a Player object
-    print(f"Name: {player.name}")
-    print(f"Level: {player.get_player_level()}")  # You can call the method if you need the level
-    print(f"Stock Limit: {player.stock_limit}")
 
 def view_stock(player):
     """View the player's stock of personas."""
@@ -85,38 +101,92 @@ def view_stock(player):
         print("Your Stock:")
         for persona in stock_list:
             print(f"Name: {persona[0]}, Level: {persona[1]}, Arcana: {persona[2]}")
-    else:
-        print("Your stock is empty.")
+    # else:
+    #     print("Your stock is empty.")
 def summon_persona(player):
     """Summon a random persona."""
     print("\nSummoning a persona...")
     player.summon_persona()
 
-def release_persona(player):
+def release_persona(self):
     """Release a persona from the player's stock."""
-    print("\nReleasing a persona...")
-    view_stock(player)  # Show stock to help the user choose
-    persona_id = input("Enter the ID of the persona to release: ").strip()
-    if persona_id.isdigit():
-        player.release_persona(int(persona_id))
+    self.list_stock()  # Display the personas in a numbered list
+    selection = input("Enter the number of the persona you want to release: ")
+
+    if selection.isdigit():
+        selection = int(selection)
+        persona = self.get_persona_by_number(selection)  # Fetch persona by number
+        if persona:
+            self.remove_persona_from_stock(persona)  # Remove the selected persona from stock
+            print(f"You have released {persona.name}!")
+        else:
+            print("Invalid selection.")
     else:
-        print("Invalid ID. Please try again.")
+        print("Please enter a valid number.")
 
 def fuse_personas(player):
     """Fuse two personas in the player's stock."""
     print("\nFusing personas...")
     view_stock(player)  # Show stock to help the user choose
-    persona_id_1 = input("Enter the ID of the first persona: ").strip()
-    persona_id_2 = input("Enter the ID of the second persona: ").strip()
+    try:
+        persona_num_1 = int(input("Enter the number of the first persona: ").strip())
+        persona_num_2 = int(input("Enter the number of the second persona: ").strip())
+    except ValueError:
+        print("Invalid input. Please enter a valid number.")
+        return
 
-    if persona_id_1.isdigit() and persona_id_2.isdigit():
-        success = player.fuse_personas(int(persona_id_1), int(persona_id_2))
-        if success:
-            print("Fusion successful!")
-        else:
-            print("Fusion failed. Ensure the conditions are met.")
+    # Get personas by the entered numbers
+    persona_1 = player.get_persona_by_number(persona_num_1)
+    persona_2 = player.get_persona_by_number(persona_num_2)
+
+    if not persona_1 or not persona_2:
+        print("Invalid selection. Please try again.")
+        return
+
+    # Perform fusion
+    success = player.fuse_personas(persona_1.id, persona_2.id)
+    if success:
+        print("Fusion successful!")
     else:
-        print("Invalid IDs. Please try again.")
+        print("Fusion failed. Ensure the conditions are met.")
+def view_all_arcanas():
+    """List all arcanas and allow the user to view associated personas."""
+    conn = sqlite3.connect('velvetRoom.db')
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SELECT id, name FROM arcanas")
+        arcanas = cursor.fetchall()
+
+        if not arcanas:
+            print("No arcanas available.")
+            return
+
+        print("\n--- All Arcanas ---")
+        for arcana in arcanas:
+            print(f"{arcana[0]}. {arcana[1]}")
+
+        try:
+            arcana_id = int(input("Enter the number of an arcana to see its personas: ").strip())
+        except ValueError:
+            print("Invalid input. Please enter a valid number.")
+            return
+
+        cursor.execute("SELECT name, level FROM personas WHERE arcana_id = ?", (arcana_id,))
+        personas = cursor.fetchall()
+
+        if personas:
+            print(f"\n--- Personas of Arcana {arcana_id} ---")
+            for persona in personas:
+                print(f"- {persona[0]} (Level: {persona[1]})")
+        else:
+            print("No personas available for the selected arcana.")
+
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+    finally:
+        conn.close()
+
 
 if __name__ == "__main__":
     main()

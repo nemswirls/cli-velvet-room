@@ -1,7 +1,7 @@
 import sqlite3
 
 class Arcana:
-    def __init__(self, db_name='game.db'):
+    def __init__(self, db_name='velvetRoom.db'):
         """Initialize with the database name (default is 'game.db')."""
         self.db_name = db_name
 

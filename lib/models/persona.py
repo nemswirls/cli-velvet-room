@@ -1,7 +1,7 @@
 import sqlite3
 
 class Persona:
-    def __init__(self, persona_id, name, level, arcana, player_id=None):
+    def __init__(self, id, name, level, arcana_id, player_id=None):
         """
         Initialize a Persona object.
 
@@ -11,11 +11,14 @@ class Persona:
         :param arcana: Arcana to which the persona belongs (str).
         :param player_id: ID of the player who owns this persona, optional (int).
         """
-        self.persona_id = persona_id
+        self.id = id
         self.name = name
         self.level = level
-        self.arcana = arcana
+        self.arcana_id = arcana_id
         self.player_id = player_id
+    def _connect(self):
+        """Private method to establish a connection to the SQLite database."""
+        return sqlite3.connect(self.db_name)
 
     @classmethod
     def from_db_row(cls, row):
