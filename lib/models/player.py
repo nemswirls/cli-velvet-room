@@ -182,8 +182,8 @@ class Player:
         try:
            cursor.execute("UPDATE personas SET player_id = NULL WHERE id = ?", (persona.id,))
            conn.commit()
-           self.increase_player_level(2)
-           print(f"Your level has increased by 2 to {self.get_player_level()}.")
+        #    self.increase_player_level(2)
+        #    print(f"Your level has increased by 2 to {self.get_player_level()}.")
            print(f"Persona {persona.name} has been removed from your stock.")
         except sqlite3.Error as e:
            print(f"An error occurred while removing the persona: {e}")
@@ -270,9 +270,11 @@ class Player:
             cursor.execute("""
                 SELECT id, name, level, arcana_id 
                 FROM personas 
-                WHERE arcana_id NOT IN (?, ?) AND level >= ? 
-                ORDER BY RANDOM() LIMIT 1
-            """, (arcana_id_1, arcana_id_2, self.level + 3))
+                WHERE arcana_id NOT IN (?, ?) 
+                AND level BETWEEN ? AND ?
+                ORDER BY RANDOM()
+                 LIMIT 1
+            """, (arcana_id_1, arcana_id_2,self.level - 3, self.level + 3))
 
             new_persona = cursor.fetchone()
 
